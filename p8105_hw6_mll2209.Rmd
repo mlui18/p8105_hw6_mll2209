@@ -146,3 +146,79 @@ cv_df %>%
   ggplot(aes(x = model, y = rmse)) + geom_violin()
 ```
 
+### Problem 3
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+```{r}
+lm(tmax ~ tmin, data = weather_df) %>%
+  broom::tidy() %>%
+  knitr::kable(digits = 3)
+
+lm(tmax ~ tmin, data = weather_df) %>%
+  broom::glance() %>%
+  knitr::kable(digits = 3)
+```
+
+```{r}
+boot_sample = function(df) {
+  sample_frac(df, replace = TRUE)
+}
+
+boot_sample(weather_df) %>%
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(alpha = .5) +
+  stat_smooth(method = "lm")
+
+```
+
+```{r}
+boot_straps = 
+  data_frame(
+    strap_number = 1:50,
+    strap_sample = rerun(50, boot_sample(weather_df))
+  )
+
+boot_straps
+
+boot_straps %>% 
+  filter(strap_number %in% 1:2) %>% 
+  mutate(strap_sample = map(strap_sample, ~arrange(.x, tmin))) %>% 
+  pull(strap_sample)
+
+boot_straps %>% 
+  filter(strap_number %in% 1:3) %>% 
+  unnest(strap_sample) %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(alpha = .5) +
+  stat_smooth(method = "lm", se = FALSE) +
+  facet_grid(~strap_number) 
+```
+
+```{r}
+bootstrap_results = 
+  boot_straps %>% 
+  mutate(
+    models = map(strap_sample, ~lm(tmax ~ tmin, data = .x) ),
+    results = map(models, broom::glance)) %>% 
+  select(-strap_sample, -models) %>% 
+  unnest(results) 
+
+bootstrap_results %>%
+  summarize(
+    ci_lower = quantile(r.squared, 0.025),
+    ci_upper = quantile(r.squared, 0.975))
+```
+
