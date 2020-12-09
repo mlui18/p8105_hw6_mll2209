@@ -28,6 +28,7 @@ theme_set(theme_minimal() + theme(legend.position = "bottom"))
 library(tidyverse)
 library(modelr)
 library(p8105.datasets)
+library(mgcv)
 ```
 
 ### Problem 1
@@ -99,6 +100,14 @@ models_results_df %>%
 ### Problem 2
 
 ```{r}
-
+baby_df = 
+  read_csv("./data/birthweight.csv") %>%
+  mutate(
+    babysex = as.factor(babysex),
+    frace = as.factor(frace),
+    malform = as.factor(malform),
+    mrace = as.factor(mrace)
+  ) %>%
+  na.omit()
 ```
 
