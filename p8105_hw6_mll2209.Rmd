@@ -111,9 +111,18 @@ baby_df =
   na.omit()
 ```
 
+create proposed model
+```{r}
+my_mod = lm(bwt ~ blength + gaweeks, data = baby_df)
+baby_df %>%
+  add_predictions(my_mod) %>%
+  add_residuals(my_mod) %>%
+  ggplot(aes(x = pred, y = resid)) + geom_point()
+```
+
 cross validation for two comparison models
 ```{r}
-cv_df = crossv_mc(baby_df, 10)
+cv_df = crossv_mc(baby_df, 100)
 cv_df = 
   cv_df  %>%
   mutate(
