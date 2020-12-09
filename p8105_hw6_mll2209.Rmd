@@ -191,8 +191,6 @@ boot_straps =
     strap_sample = rerun(50, boot_sample(weather_df))
   )
 
-boot_straps
-
 boot_straps %>% 
   filter(strap_number %in% 1:2) %>% 
   mutate(strap_sample = map(strap_sample, ~arrange(.x, tmin))) %>% 
@@ -206,7 +204,7 @@ boot_straps %>%
   stat_smooth(method = "lm", se = FALSE) +
   facet_grid(~strap_number) 
 ```
-
+ for r squared
 ```{r}
 bootstrap_results = 
   boot_straps %>% 
@@ -217,8 +215,42 @@ bootstrap_results =
   unnest(results) 
 
 bootstrap_results %>%
+  ggplot(aes(x = r.squared)) +
+  geom_density()
+
+bootstrap_results %>%
   summarize(
     ci_lower = quantile(r.squared, 0.025),
     ci_upper = quantile(r.squared, 0.975))
+```
+
+for log(beta0 * beta1)
+```{r}
+bootstrap_results = 
+  boot_straps %>% 
+  mutate(
+    models = map(strap_sample, ~lm(tmax ~ tmin, data = .x) ),
+    results = map(models, broom::tidy)) %>% 
+  select(-strap_sample, -models) %>% 
+  unnest(results) %>%
+  select(strap_number, term, estimate) %>%
+  pivot_wider(
+    names_from = "term",
+    values_from = "estimate"
+  )
+
+bootstrap_results =
+tibble(
+bootstrap_results,
+log = log(pull(bootstrap_results, '(Intercept)') * pull(bootstrap_results, tmin)))
+
+bootstrap_results %>%
+  ggplot(aes(x = log)) +
+  geom_density()
+
+bootstrap_results %>%
+  summarize(
+    ci_lower = quantile(log, 0.025),
+    ci_upper = quantile(log, 0.975))
 ```
 
