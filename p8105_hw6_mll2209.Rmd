@@ -96,6 +96,7 @@ models_results_df %>%
   geom_errorbar(aes(ymin = CI_lower, ymax = CI_upper)) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
+As the estimated ORs increase, so does the confidence interval that corresponds to that OR. 
 
 ### Problem 2
 
@@ -200,7 +201,7 @@ produce data frame with estimates
 ```{r}
 bootstrap_rsquared = 
   weather_df %>%
-  modelr::bootstrap(n = 50) %>%
+  modelr::bootstrap(n = 5000) %>%
   mutate(
     models = map(strap, ~lm(tmax ~ tmin, data = .x) ),
     results = map(models, broom::glance)) %>% 
@@ -214,6 +215,7 @@ bootstrap_rsquared %>%
   ggplot(aes(x = r.squared)) +
   geom_density()
 ```
+The distribution of the r-squared estimates have a mostly normal distribution that is centered around 0.91, although it is slightly left skewed. 
 
 Get 95% confidence interval of R squared 
 ```{r}
@@ -222,6 +224,7 @@ bootstrap_rsquared %>%
     ci_lower = quantile(r.squared, 0.025),
     ci_upper = quantile(r.squared, 0.975))
 ```
+The 95% confidence interval for r-squared is 0.8947 to 0.9266. We are 95% confidence that the true R-squared value lies between 0.8947 and 0.9266.
 
 *Bootstrap for log(b0 * b1)
 
@@ -229,7 +232,7 @@ produce data frame with estimates
 ```{r}
 bootstrap_log = 
   weather_df %>%
-  modelr::bootstrap(n = 50) %>%
+  modelr::bootstrap(n = 5000) %>%
   mutate(
     models = map(strap, ~lm(tmax ~ tmin, data = .x) ),
     results = map(models, broom::tidy)) %>% 
@@ -253,6 +256,7 @@ bootstrap_log %>%
   ggplot(aes(x = log)) +
   geom_density()
 ```
+The distribution for the estimates of log(b0*b1) look like a normal distribution centered around 2.02, with a little bit of a left skew.
 
 95% confidence interval of log(b0*b1)
 ```{r}
@@ -261,4 +265,4 @@ bootstrap_log %>%
     ci_lower = quantile(log, 0.025),
     ci_upper = quantile(log, 0.975))
 ```
-
+The 95% confidence interval for log(b0*b1) is 1.9652 to 2.0580. We are 95% confident that the true value of log(b0*b1) is between 1.9652 and 2.0580.
